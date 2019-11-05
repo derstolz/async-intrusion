@@ -10,7 +10,7 @@ import requests
 
 THREAD_POOL_EXHAUSTED_LIMIT = 10
 SLEEP_TIMER_IN_SECONDS = 1
-DEFAULT_OUTPUT_DIRECTORY = 'async-sqlmap'
+DEFAULT_OUTPUT_FILE = 'async-web-scan.txt'
 DEFAULT_SLEEP_TIMER_IN_SECONDS = 60
 DEFAULT_REQUEST_TIMEOUT_IN_SECONDS = 3
 COMMON_FILE_EXTENSIONS = ['.php', '.html', '.asp', '.aspx', '.py', '.txt', '']
@@ -61,7 +61,7 @@ def read_file(file_name):
         return [line.strip() for line in file.readlines()]
 
 
-def brute_force_with_all_extensions(uri, ip_address, show_codes):
+def brute_force_with_all_extensions(uri, ip_address, show_codes, output_file=DEFAULT_OUTPUT_FILE):
     for extension in COMMON_FILE_EXTENSIONS:
         try:
             if not uri.startswith('/'):
@@ -82,6 +82,8 @@ def brute_force_with_all_extensions(uri, ip_address, show_codes):
                                                 length=len(resp.content),
                                                 server=resp.headers['server'] if 'server' in resp.headers else "")
                 print(log_message)
+                with open(output_file, 'a', encoding='utf-8') as file:
+                    print(log_message, file=file)
         except Exception:
             return
 
@@ -161,10 +163,10 @@ def create_parallel_jobs(uri_list,
     spinner_thread = Thread(target=spin)
     spinner_thread.start()
 
-
     for i, ip in enumerate(ip_list):
         while len(threads) >= thread_limit:
-            print('{spinner_width} {i}/{len}\r'.format(spinner_width=len(spinner[0]) * ' ', i=i, len=len(ip_list)), end='', flush=True)
+            print('{spinner_width} {i}/{len}\r'.format(spinner_width=len(spinner[0]) * ' ', i=i, len=len(ip_list)),
+                  end='', flush=True)
             sleep(sleep_timer_in_seconds)
             for thread in threads.copy():
                 if not thread.isAlive():
