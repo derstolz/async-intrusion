@@ -34,6 +34,10 @@ def get_arguments():
                         default=[],
                         required=False,
                         help='Optional. A comma-separated list of status codes.')
+    parser.add_argument('--ip',
+                        dest='ip',
+                        required=False,
+                        help='A single IP address to perform the parallel scanning')
     parser.add_argument('--ip-range',
                         dest='ip_range',
                         required=False,
@@ -51,8 +55,8 @@ def get_arguments():
     options = parser.parse_args()
     if not options.uri and not options.uri_file:
         parser.error('Either an URI or a file with URI\'s must be given')
-    if not options.ip_range and not options.ip_file:
-        parser.error('Either an IP range or a file with IP addresses must be given')
+    if not options.ip_range and not options.ip_file and not options.ip:
+        parser.error('You have to give something to scan, use --help for more info')
     return options
 
 
@@ -122,9 +126,6 @@ def create_parallel_jobs(uri_list,
             show_codes = [int(scode) for scode in show_codes.split(',')]
         else:
             show_codes = [int(show_codes)]
-    threads = []
-    thread_limit = int(thread_limit)
-
     spinner = [
         "▐|\\____________▌",
         "▐_|\\___________▌",
@@ -159,10 +160,28 @@ def create_parallel_jobs(uri_list,
         for c in cycle(spinner):
             print("{}\r".format(c), end='', flush=True)
             sleep(refresh_rate)
+
     # thanks to jes_doe for a nice spinner ;3
     spinner_thread = Thread(target=spin)
     spinner_thread.start()
 
+    threads = []
+    thread_limit = int(thread_limit)
+
+    if len(ip_list) == 1:
+        # create a separate thread for each directory
+        ip = ip_list[0]
+        for uri in uri_list:
+            create_job([ip], show_codes, sleep_timer_in_seconds, spinner, thread_limit, threads, [uri])
+    else:
+        # create a separate thread for each ip address
+        create_job(ip_list, show_codes, sleep_timer_in_seconds, spinner, thread_limit, threads, uri_list)
+    while any(thread.isAlive() for thread in threads):
+        sleep(sleep_timer_in_seconds)
+    print('All threads have been finished')
+
+
+def create_job(ip_list, show_codes, sleep_timer_in_seconds, spinner, thread_limit, threads, uri_list):
     for i, ip in enumerate(ip_list):
         while len(threads) >= thread_limit:
             print('{spinner_width} {i}/{len}\r'.format(spinner_width=len(spinner[0]) * ' ', i=i, len=len(ip_list)),
@@ -178,15 +197,13 @@ def create_parallel_jobs(uri_list,
         except Exception as e:
             print('{exception}'.format(exception=e))
 
-    while any(thread.isAlive() for thread in threads):
-        sleep(sleep_timer_in_seconds)
-    print('All threads have been finished')
-
 
 def main():
     try:
         options = get_arguments()
-        if options.ip_file:
+        if options.ip:
+            ip_addresses = [options.ip]
+        elif options.ip_file:
             ip_addresses = read_file(options.ip_file)
         elif options.ip_range:
             ip_addresses = []
