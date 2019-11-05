@@ -159,7 +159,7 @@ def create_parallel_jobs(uri_list,
         for c in cycle(spinner):
             print("{}\r".format(c), end='', flush=True)
             sleep(refresh_rate)
-
+    # thanks to jes_doe for a nice spinner ;3
     spinner_thread = Thread(target=spin)
     spinner_thread.start()
 
