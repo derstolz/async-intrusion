@@ -79,7 +79,7 @@ def get_arguments():
         parser.error('You have to give something to scan, use --help for more info')
     return options
 
-
+import re
 def read_file(file_name):
     with open(file_name, 'r', encoding='utf-8') as file:
         return [line.strip() for line in file.readlines()]
@@ -96,6 +96,8 @@ def find_directory(uri_list, ip_address, show_codes):
                 resp = requests.get('http://{ip}{uri}'.format(ip=ip_address,
                                                               uri=uri_with_extension),
                                     timeout=DEFAULT_REQUEST_TIMEOUT_IN_SECONDS)
+                global total_requests
+                total_requests += 1
                 status_code = resp.status_code
                 if len(show_codes) == 0 or (len(show_codes) > 0 and status_code in show_codes):
                     log_message = '{ip} - GET {uri} ' \
@@ -168,7 +170,7 @@ def create_parallel_jobs(uri_list,
     def spin(refresh_rate=0.3):
         from itertools import cycle
         for c in cycle(spinner):
-            print("{}\r".format(c), end='', flush=True)
+            print("{c} scanning in progress\r".format(c=c), end='', flush=True)
             sleep(refresh_rate)
 
     # thanks to jes_doe for a nice spinner ;3
@@ -194,8 +196,6 @@ def create_parallel_jobs(uri_list,
 def create_job(ip_list, show_codes, sleep_timer_in_seconds, spinner, thread_limit, threads, uri_list):
     for i, ip in enumerate(ip_list):
         while len(threads) >= thread_limit:
-            print('{spinner_width} {i}/{len}\r'.format(spinner_width=len(spinner[0]) * ' ', i=i, len=len(ip_list)),
-                  end='', flush=True)
             sleep(sleep_timer_in_seconds)
             for thread in threads.copy():
                 if not thread.isAlive():
@@ -240,8 +240,10 @@ from datetime import datetime
 
 if '__main__' == __name__:
     start_time = datetime.now()
+    total_requests = 0
     main()
     end_time = datetime.now()
     print('Async web scanner finished in about {sec} seconds'.format(sec=end_time.second - start_time.second))
+    print('Total number of HTTP requests: {req}'.format(req=total_requests))
     print('Killing all threads before exit...')
     run(['killall', 'python3'])
