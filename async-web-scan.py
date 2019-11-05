@@ -13,7 +13,27 @@ SLEEP_TIMER_IN_SECONDS = 1
 DEFAULT_OUTPUT_FILE = 'async-web-scan.txt'
 DEFAULT_SLEEP_TIMER_IN_SECONDS = 60
 DEFAULT_REQUEST_TIMEOUT_IN_SECONDS = 3
-COMMON_FILE_EXTENSIONS = ['.php', '.html', '.asp', '.aspx', '.py', '.txt', '']
+COMMON_FILE_EXTENSIONS = [
+    '',
+    '.asmx',
+    '.asmx?wsdl',
+    '.aspx',
+    ".atom",
+    ".disco",
+    ".html",
+    ".java",
+    ".jsp",
+    ".jws",
+    ".jws?wsdl",
+    ".php",
+    ".pl",
+    '.py',
+    '.rss',
+    '.svc',
+    '.wsdl',
+    '?disco',
+    '?wsdl'
+]
 
 
 def get_arguments():
@@ -65,40 +85,30 @@ def read_file(file_name):
         return [line.strip() for line in file.readlines()]
 
 
-def brute_force_with_all_extensions(uri, ip_address, show_codes, output_file=DEFAULT_OUTPUT_FILE):
-    for extension in COMMON_FILE_EXTENSIONS:
-        try:
-            if not uri.startswith('/'):
-                uri = '/' + uri
-            uri_with_extension = "{uri}{ext}".format(uri=uri,
-                                                     ext=extension)
-            resp = requests.get('http://{ip}{uri}'.format(ip=ip_address,
-                                                          uri=uri_with_extension),
-                                timeout=DEFAULT_REQUEST_TIMEOUT_IN_SECONDS)
-            status_code = resp.status_code
-            if len(show_codes) == 0 or (len(show_codes) > 0 and status_code in show_codes):
-                log_message = '{ip} - GET {uri} ' \
-                              '{status_code} ' \
-                              '{length} ' \
-                              '{server}'.format(ip=ip_address,
-                                                uri=uri_with_extension,
-                                                status_code=status_code,
-                                                length=len(resp.content),
-                                                server=resp.headers['server'] if 'server' in resp.headers else "")
-                print(log_message)
-                with open(output_file, 'a', encoding='utf-8') as file:
-                    print(log_message, file=file)
-        except Exception:
-            return
-
-
 def find_directory(uri_list, ip_address, show_codes):
-    if len(uri_list) == 1:
-        uri = uri_list[0]
-        brute_force_with_all_extensions(uri, ip_address, show_codes)
-    elif len(uri_list) > 1:
-        for uri in uri_list:
-            brute_force_with_all_extensions(uri, ip_address, show_codes)
+    for uri in uri_list:
+        for extension in COMMON_FILE_EXTENSIONS:
+            try:
+                if not uri.startswith('/'):
+                    uri = '/' + uri
+                uri_with_extension = "{uri}{ext}".format(uri=uri,
+                                                         ext=extension)
+                resp = requests.get('http://{ip}{uri}'.format(ip=ip_address,
+                                                              uri=uri_with_extension),
+                                    timeout=DEFAULT_REQUEST_TIMEOUT_IN_SECONDS)
+                status_code = resp.status_code
+                if len(show_codes) == 0 or (len(show_codes) > 0 and status_code in show_codes):
+                    log_message = '{ip} - GET {uri} ' \
+                                  '{status_code} ' \
+                                  '{length} ' \
+                                  '{server}'.format(ip=ip_address,
+                                                    uri=uri_with_extension,
+                                                    status_code=status_code,
+                                                    length=len(resp.content),
+                                                    server=resp.headers['server'] if 'server' in resp.headers else "")
+                    print(log_message)
+            except Exception:
+                return
 
 
 class JobThread:
@@ -224,9 +234,14 @@ def main():
                 create_parallel_jobs(uri_list, ip_addresses, show_codes, threads_limit)
     except Exception as e:
         print(e)
-    print('Killing all threads before exit...')
-    run(['killall', 'python3'])
 
+
+from datetime import datetime
 
 if '__main__' == __name__:
+    start_time = datetime.now()
     main()
+    end_time = datetime.now()
+    print('Async web scanner finished in about {sec} seconds'.format(sec=end_time.second - start_time.second))
+    print('Killing all threads before exit...')
+    run(['killall', 'python3'])
