@@ -122,9 +122,49 @@ def create_parallel_jobs(uri_list,
             show_codes = [int(show_codes)]
     threads = []
     thread_limit = int(thread_limit)
+
+    spinner = [
+        "▐|\\____________▌",
+        "▐_|\\___________▌",
+        "▐__|\\__________▌",
+        "▐___|\\_________▌",
+        "▐____|\\________▌",
+        "▐_____|\\_______▌",
+        "▐______|\\______▌",
+        "▐_______|\\_____▌",
+        "▐________|\\____▌",
+        "▐_________|\\___▌",
+        "▐__________|\\__▌",
+        "▐___________|\\_▌",
+        "▐____________|\\▌",
+        "▐____________/|▌",
+        "▐___________/|_▌",
+        "▐__________/|__▌",
+        "▐_________/|___▌",
+        "▐________/|____▌",
+        "▐_______/|_____▌",
+        "▐______/|______▌",
+        "▐_____/|_______▌",
+        "▐____/|________▌",
+        "▐___/|_________▌",
+        "▐__/|__________▌",
+        "▐_/|___________▌",
+        "▐/|____________▌"
+    ]
+
+    def spin(refresh_rate=0.3):
+        from itertools import cycle
+        for c in cycle(spinner):
+            print("{}\r".format(c), end='', flush=True)
+            sleep(refresh_rate)
+
+    spinner_thread = Thread(target=spin)
+    spinner_thread.start()
+
+
     for i, ip in enumerate(ip_list):
         while len(threads) >= thread_limit:
-            print('Scanning {i}/{len}\r'.format(i=i, len=len(ip_list)), end='', flush=True)
+            print('{spinner_width} {i}/{len}\r'.format(spinner_width=len(spinner[0]) * ' ', i=i, len=len(ip_list)), end='', flush=True)
             sleep(sleep_timer_in_seconds)
             for thread in threads.copy():
                 if not thread.isAlive():
@@ -141,7 +181,7 @@ def create_parallel_jobs(uri_list,
     print('All threads have been finished')
 
 
-def __main__():
+def main():
     try:
         options = get_arguments()
         if options.ip_file:
@@ -170,4 +210,4 @@ def __main__():
 
 
 if '__main__' == __name__:
-    __main__()
+    main()
