@@ -9,20 +9,26 @@ from time import sleep
 import requests
 
 THREAD_POOL_EXHAUSTED_LIMIT = 10
-SLEEP_TIMER_IN_SECONDS = 10
+SLEEP_TIMER_IN_SECONDS = 1
 DEFAULT_OUTPUT_DIRECTORY = 'async-sqlmap'
 DEFAULT_SLEEP_TIMER_IN_SECONDS = 60
-
+DEFAULT_REQUEST_TIMEOUT_IN_SECONDS = 3
 COMMON_FILE_EXTENSIONS = ['.php', '.html', '.asp', '.aspx', '.py', '.txt', '']
 
 
 def get_arguments():
     from argparse import ArgumentParser
     parser = ArgumentParser(
-        description='Use this tool to recursively crawl the web-servers in a given network to find a given directory.')
-    parser.add_argument('--uri', dest='uri',
-                        required=True,
+        description='Use this tool to recursively crawl the web-servers within a given network '
+                    'to bruteforce and discover a given URI or a list of URI\'s.')
+    parser.add_argument('--uri',
+                        dest='uri',
+                        required=False,
                         help='An URI to search within the given network range.')
+    parser.add_argument('--uri-file',
+                        dest='uri_file',
+                        required=False,
+                        help='A new-line separated file with a list of URI\'s to bruteforce.')
     parser.add_argument('--show-code',
                         dest='show_code',
                         default=[],
@@ -43,23 +49,28 @@ def get_arguments():
                         help='Optional. A number of threads to use in script to scan hosts in parallel. Default is ' + str(
                             THREAD_POOL_EXHAUSTED_LIMIT))
     options = parser.parse_args()
+    if not options.uri and not options.uri_file:
+        parser.error('Either an URI or a file with URI\'s must be given')
     if not options.ip_range and not options.ip_file:
         parser.error('Either an IP range or a file with IP addresses must be given')
     return options
 
 
-def read_ip_addresses(file_name):
+def read_file(file_name):
     with open(file_name, 'r', encoding='utf-8') as file:
         return [line.strip() for line in file.readlines()]
 
 
-def find_directory(uri, ip_address, show_codes):
+def brute_force_with_all_extensions(uri, ip_address, show_codes):
     for extension in COMMON_FILE_EXTENSIONS:
         try:
+            if not uri.startswith('/'):
+                uri = '/' + uri
             uri_with_extension = "{uri}{ext}".format(uri=uri,
                                                      ext=extension)
             resp = requests.get('http://{ip}{uri}'.format(ip=ip_address,
-                                                          uri=uri_with_extension))
+                                                          uri=uri_with_extension),
+                                timeout=DEFAULT_REQUEST_TIMEOUT_IN_SECONDS)
             status_code = resp.status_code
             if len(show_codes) == 0 or (len(show_codes) > 0 and status_code in show_codes):
                 log_message = '[{ip}] GET {uri} ' \
@@ -73,6 +84,15 @@ def find_directory(uri, ip_address, show_codes):
                 print(log_message)
         except Exception:
             return
+
+
+def find_directory(uri_list, ip_address, show_codes):
+    if len(uri_list) == 1:
+        uri = uri_list[0]
+        brute_force_with_all_extensions(uri, ip_address, show_codes)
+    elif len(uri_list) > 1:
+        for uri in uri_list:
+            brute_force_with_all_extensions(uri, ip_address, show_codes)
 
 
 class JobThread:
@@ -90,7 +110,7 @@ class JobThread:
         return self.thread.isAlive()
 
 
-def create_parallel_jobs(uri,
+def create_parallel_jobs(uri_list,
                          ip_list,
                          show_codes,
                          thread_limit=THREAD_POOL_EXHAUSTED_LIMIT,
@@ -101,6 +121,7 @@ def create_parallel_jobs(uri,
         else:
             show_codes = [int(show_codes)]
     threads = []
+    thread_limit = int(thread_limit)
     for i, ip in enumerate(ip_list):
         while len(threads) >= thread_limit:
             print('Scanning {i}/{len}\r'.format(i=i, len=len(ip_list)), end='', flush=True)
@@ -109,7 +130,7 @@ def create_parallel_jobs(uri,
                 if not thread.isAlive():
                     threads.remove(thread)
         try:
-            thread = JobThread(target_function=find_directory, target_function_args=(uri, ip, show_codes))
+            thread = JobThread(target_function=find_directory, target_function_args=(uri_list, ip, show_codes))
             thread.start()
             threads.append(thread)
         except Exception as e:
@@ -124,7 +145,7 @@ def __main__():
     try:
         options = get_arguments()
         if options.ip_file:
-            ip_addresses = read_ip_addresses(options.ip_file)
+            ip_addresses = read_file(options.ip_file)
         elif options.ip_range:
             ip_addresses = []
             chunks = options.ip_range.split('.')
@@ -132,7 +153,16 @@ def __main__():
                 ip_addresses.append("{}.{}.{}.{}".format(chunks[0], chunks[1], chunks[2], str(i)))
         else:
             ip_addresses = []
-        create_parallel_jobs(options.uri, ip_addresses, options.show_code, int(options.threads))
+        uri = options.uri
+        show_codes = options.show_code
+        threads_limit = options.threads
+        if uri:
+            create_parallel_jobs([uri], ip_addresses, show_codes, threads_limit)
+        list_of_uris_file_name = options.uri_file
+        if list_of_uris_file_name:
+            uri_list = read_file(list_of_uris_file_name)
+            if uri_list:
+                create_parallel_jobs(uri_list, ip_addresses, show_codes, threads_limit)
     except Exception as e:
         print(e)
     print('Killing all threads before exit...')
