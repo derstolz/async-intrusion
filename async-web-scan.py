@@ -73,7 +73,7 @@ def brute_force_with_all_extensions(uri, ip_address, show_codes, output_file=DEF
                                 timeout=DEFAULT_REQUEST_TIMEOUT_IN_SECONDS)
             status_code = resp.status_code
             if len(show_codes) == 0 or (len(show_codes) > 0 and status_code in show_codes):
-                log_message = '[{ip}] GET {uri} ' \
+                log_message = '{ip} - GET {uri} ' \
                               '{status_code} ' \
                               '{length} ' \
                               '{server}'.format(ip=ip_address,
