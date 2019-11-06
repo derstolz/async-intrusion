@@ -33,6 +33,16 @@ def get_arguments():
                         choices=HTTP_METHODS,
                         required=False,
                         help='HTTP method to use. Default is GET')
+    parser.add_argument('--headers',
+                        dest='headers',
+                        nargs="+",
+                        default=['User-Agent'],
+                        required=False,
+                        help='A space separated list of headers to use to inject the payload.')
+    parser.add_argument('--data',
+                        dest='data',
+                        required=False,
+                        help='HTTP body message to send. You should paste your placeholder to fuzz as "FUZZ"')
     parser.add_argument('--wordlist',
                         dest='wordlist',
                         required=False,
@@ -44,16 +54,6 @@ def get_arguments():
                         choices=['INFO', 'DEBUG', 'WARNING', "ERROR"],
                         required=False,
                         help='Logging level. Default is ' + DEFAULT_LOGGING_LEVEL)
-    parser.add_argument('--headers',
-                        dest='headers',
-                        nargs="+",
-                        default=['User-Agent'],
-                        required=False,
-                        help='A space separated list of headers to use to inject the payload.')
-    parser.add_argument('--data',
-                        dest='data',
-                        required=False,
-                        help='HTTP body message to send. You should paste your placeholder to fuzz as "FUZZ"')
     parser.add_argument('--threads',
                         dest='threads',
                         default=THREAD_POOL_EXHAUSTED_LIMIT,
