@@ -34,7 +34,9 @@ def get_arguments():
     parser.add_argument('--port',
                         dest='port',
                         required=False,
-                        help='A single TCP port to scan. Sometimes you may want to scan one port on the different machines.')
+                        help='A single TCP port to scan. Sometimes you may want to scan one port '
+                             'on the different machines. '
+                             'This argument accepts a comma separated list of ports.')
     parser.add_argument('--port-range',
                         dest='port_range',
                         required=False,
@@ -182,13 +184,23 @@ try:
                              thread_limit=int(options.threads),
                              sleep_timer_in_seconds=int(options.sleep))
     elif options.port:
-        create_parallel_jobs(ip_addresses,
-                             port_range=None,
-                             port=int(options.port),
-                             timeout=int(options.timeout),
-                             thread_limit=int(options.threads),
-                             sleep_timer_in_seconds=int(options.sleep)
-                             )
+        port = options.port
+        if ',' not in port:
+            create_parallel_jobs(ip_addresses,
+                                 port_range=None,
+                                 port=int(options.port),
+                                 timeout=int(options.timeout),
+                                 thread_limit=int(options.threads),
+                                 sleep_timer_in_seconds=int(options.sleep)
+                                 )
+        else:
+            create_parallel_jobs(ip_addresses,
+                                 port_range=[int(p) for p in port.split(',')],
+                                 port=None,
+                                 timeout=int(options.timeout),
+                                 thread_limit=int(options.threads),
+                                 sleep_timer_in_seconds=int(options.sleep)
+                                 )
     logging.info('TCP Connect scan finished at {now}'.format(now=current_date_time()))
 except Exception as e:
     logging.error(e)
