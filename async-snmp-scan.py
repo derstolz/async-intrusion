@@ -82,6 +82,8 @@ def get_arguments():
                         required=False,
                         help='Logging level. Default is ' + DEFAULT_LOGGING_LEVEL)
     options = parser.parse_args()
+    if not options.ip_range and not options.ip_file and not options.ip:
+        parser.error('You have to give something to scan, use --help for more info')
     return options
 
 
