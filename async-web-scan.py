@@ -10,7 +10,6 @@ import requests
 
 THREAD_POOL_EXHAUSTED_LIMIT = 10
 SLEEP_TIMER_IN_SECONDS = 1
-DEFAULT_OUTPUT_FILE = 'async-web-scan.txt'
 DEFAULT_SLEEP_TIMER_IN_SECONDS = 60
 DEFAULT_REQUEST_TIMEOUT_IN_SECONDS = 3
 COMMON_FILE_EXTENSIONS = [
@@ -88,8 +87,11 @@ def read_file(file_name):
     with open(file_name, 'r', encoding='utf-8') as file:
         return [line.strip() for line in file.readlines()]
 
+
 shown_emailes = set()
 shown_responses = set()
+
+
 def find_directory(uri_list, ip_address, show_codes):
     for uri in uri_list:
         for extension in COMMON_FILE_EXTENSIONS:
@@ -100,7 +102,7 @@ def find_directory(uri_list, ip_address, show_codes):
                     uri_with_extension = uri
                 else:
                     uri_with_extension = "{uri}{ext}".format(uri=uri,
-                                                         ext=extension)
+                                                             ext=extension)
                 resp = requests.get('http://{ip}{uri}'.format(ip=ip_address,
                                                               uri=uri_with_extension),
                                     timeout=DEFAULT_REQUEST_TIMEOUT_IN_SECONDS)
@@ -205,16 +207,16 @@ def create_parallel_jobs(uri_list,
         # create a separate thread for each directory
         ip = ip_list[0]
         for uri in uri_list:
-            create_job([ip], show_codes, sleep_timer_in_seconds, spinner, thread_limit, threads, [uri])
+            create_job([ip], show_codes, sleep_timer_in_seconds, thread_limit, threads, [uri])
     else:
         # create a separate thread for each ip address
-        create_job(ip_list, show_codes, sleep_timer_in_seconds, spinner, thread_limit, threads, uri_list)
+        create_job(ip_list, show_codes, sleep_timer_in_seconds, thread_limit, threads, uri_list)
     while any(thread.isAlive() for thread in threads):
         sleep(sleep_timer_in_seconds)
     print('All threads have been finished')
 
 
-def create_job(ip_list, show_codes, sleep_timer_in_seconds, spinner, thread_limit, threads, uri_list):
+def create_job(ip_list, show_codes, sleep_timer_in_seconds, thread_limit, threads, uri_list):
     for i, ip in enumerate(ip_list):
         while len(threads) >= thread_limit:
             sleep(sleep_timer_in_seconds)
