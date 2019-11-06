@@ -163,7 +163,9 @@ def enumerate_snmp(ip, timeout):
                 'snmp_type': snmp_type})
         if results:
             logging.info(
-                "{ip} - SNMP agent enumerated, number of stored MIB value: {len}".format(ip=ip, len=len(results)))
+                "{ip} - SNMP agent has been enumerated, "
+                "number of stored MIB values: {len}".format(ip=ip,
+                                                            len=len(results)))
             with open(DEFAULT_OUTPUT_FILE.format(ip=ip), 'a', encoding='utf-8') as file:
                 json.dump({'ip': ip, 'snmp': results}, file)
                 file.write('\n')
