@@ -18,6 +18,7 @@ COMMON_FILE_EXTENSIONS = [
     '.asmx',
     '.asmx?wsdl',
     '.aspx',
+    '.asp',
     ".atom",
     ".disco",
     ".html",
@@ -79,27 +80,45 @@ def get_arguments():
         parser.error('You have to give something to scan, use --help for more info')
     return options
 
+
 import re
+
+
 def read_file(file_name):
     with open(file_name, 'r', encoding='utf-8') as file:
         return [line.strip() for line in file.readlines()]
 
-
+shown_emailes = set()
+shown_responses = set()
 def find_directory(uri_list, ip_address, show_codes):
     for uri in uri_list:
         for extension in COMMON_FILE_EXTENSIONS:
             try:
                 if not uri.startswith('/'):
                     uri = '/' + uri
-                uri_with_extension = "{uri}{ext}".format(uri=uri,
+                if extension != '' and uri.endswith(extension):
+                    uri_with_extension = uri
+                else:
+                    uri_with_extension = "{uri}{ext}".format(uri=uri,
                                                          ext=extension)
                 resp = requests.get('http://{ip}{uri}'.format(ip=ip_address,
                                                               uri=uri_with_extension),
                                     timeout=DEFAULT_REQUEST_TIMEOUT_IN_SECONDS)
                 global total_requests
                 total_requests += 1
+
                 status_code = resp.status_code
                 if len(show_codes) == 0 or (len(show_codes) > 0 and status_code in show_codes):
+                    html = resp.text
+                    matches = re.search(r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)", html)
+                    global shown_emailes
+                    if matches:
+                        for match in matches.groups():
+                            email = str(match)
+                            if email not in shown_emailes:
+                                print('{ip} - {email}'.format(ip=ip_address, email=email))
+                                shown_emailes.add(email)
+                    global shown_responses
                     log_message = '{ip} - GET {uri} ' \
                                   '{status_code} ' \
                                   '{length} ' \
@@ -108,7 +127,9 @@ def find_directory(uri_list, ip_address, show_codes):
                                                     status_code=status_code,
                                                     length=len(resp.content),
                                                     server=resp.headers['server'] if 'server' in resp.headers else "")
-                    print(log_message)
+                    if log_message not in shown_responses:
+                        print(log_message)
+                        shown_responses.add(log_message)
             except Exception:
                 return
 
@@ -170,7 +191,7 @@ def create_parallel_jobs(uri_list,
     def spin(refresh_rate=0.3):
         from itertools import cycle
         for c in cycle(spinner):
-            print("{c} scanning in progress\r".format(c=c), end='', flush=True)
+            print("{c}\r".format(c=c), end='', flush=True)
             sleep(refresh_rate)
 
     # thanks to jes_doe for a nice spinner ;3
@@ -236,14 +257,9 @@ def main():
         print(e)
 
 
-from datetime import datetime
-
 if '__main__' == __name__:
-    start_time = datetime.now()
     total_requests = 0
     main()
-    end_time = datetime.now()
-    print('Async web scanner finished in about {sec} seconds'.format(sec=end_time.second - start_time.second))
     print('Total number of HTTP requests: {req}'.format(req=total_requests))
     print('Killing all threads before exit...')
     run(['killall', 'python3'])
