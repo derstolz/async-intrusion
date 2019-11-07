@@ -10,5 +10,5 @@ A python script to perform a TCP Connect scan with a number of parallel threads
 
 # async-snmp-scanner
 A python script to perform an SNMP discovery with a number of parallel threads
-<img src="https://i.imgur.com/9G3OAE5.png" />
-<img src="https://i.imgur.com/AIUNI1p.png" />
+<img src="https://i.imgur.com/4vNB4xS.jpg" />
+<img src="https://i.imgur.com/l6JpUIK.jpg" />
