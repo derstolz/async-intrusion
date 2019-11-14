@@ -116,8 +116,9 @@ def pass_the_hash(domain, ip, user_name, lm_hash, ntlm_hash, command, timeout):
             ntlm_hash=ntlm_hash), '//' + ip, command],
                        stderr=open(os.devnull, 'w'),
                        timeout=timeout)
-        logging.info('{user_name}%{lm_hash}:{ntlm_hash}//{ip} - {result}'
-                     .format(user_name=user_name,
+        logging.info('{domain}{user_name}%{lm_hash}:{ntlm_hash}//{ip} - {result}'
+                     .format(domain=domain,
+                             user_name=user_name,
                              lm_hash=lm_hash,
                              ntlm_hash=ntlm_hash,
                              ip=ip,
