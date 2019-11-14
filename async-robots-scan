@@ -8,14 +8,14 @@ from threading import Thread
 
 THREAD_POOL_EXHAUSTED_LIMIT = 10
 DEFAULT_SLEEP_TIMER_IN_SECONDS = 0.5
-DEFAULT_SOCKET_TIMEOUT_IN_SECONDS = 3
 
 
 def get_arguments():
     from argparse import ArgumentParser
 
     parser = ArgumentParser(
-        description='Use this script to discover and crawl URL entries in a robots.txt file in a web application')
+                description='Use this script to discover and crawl URL entries in a robots.txt file in a web '
+                            'application')
     parser.add_argument('--robots-url',
                         dest='robots_url',
                         required=True,
