@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import datetime
 import logging
+import os
 from threading import Thread
 from time import sleep
 
@@ -74,11 +75,11 @@ def get_arguments():
     return options
 
 
-def send(method, url, headers, body_data):
+def send(method,
+         url,
+         headers,
+         body_data):
     try:
-        logging.debug('{method} {url} - {headers}'.format(method=method,
-                                                          url=url,
-                                                          headers=headers))
         with Session() as session:
             session.headers = headers
             if method == 'HEAD':
@@ -102,7 +103,11 @@ def send(method, url, headers, body_data):
         logging.error(f'{url} - {e}')
 
 
-def create_fuzz_thread(method, url, header_names, body_data, payload):
+def create_fuzz_thread(method,
+                       url,
+                       header_names,
+                       body_data,
+                       payload):
     headers_with_payload = {}
     for header in header_names:
         headers_with_payload[header] = payload
@@ -119,13 +124,18 @@ def create_fuzz_thread(method, url, header_names, body_data, payload):
     total_number_of_http_requests += 1
     if resp_len not in known_resp_len:
         logging.info(f'{method} {url} - {resp.status_code} {resp_len}')
-        logging.debug(f"{method} {url} - {resp.text}")
         known_resp_len.add(resp_len)
-    else:
-        logging.debug(f'{method} {url} - {resp.status_code} {resp_len}')
+    logging.debug(f'{method} {url} - {resp.status_code} {resp_len}'
+                  f'{os.linesep}'
+                  f'{resp.text}'
+                  f'{os.linesep}')
 
 
-def create_parallel_jobs(method, url, header_names, body_data, wordlist,
+def create_parallel_jobs(method,
+                         url,
+                         header_names,
+                         body_data,
+                         wordlist,
                          thread_limit=THREAD_POOL_EXHAUSTED_LIMIT,
                          sleep_timer_in_seconds=DEFAULT_SLEEP_TIMER_IN_SECONDS):
     threads = []
@@ -166,7 +176,11 @@ else:
 logging.info(f'Web server fuzzing started at {current_date_time()}')
 known_resp_len = set()
 total_number_of_http_requests = 0
-create_parallel_jobs(options.method, url, options.headers, options.data, wordlist,
+create_parallel_jobs(options.method,
+                     url,
+                     options.headers,
+                     options.data,
+                     wordlist,
                      thread_limit=options.threads,
                      sleep_timer_in_seconds=options.sleep)
 logging.info(f'Web server fuzzing finished at {current_date_time()}')
