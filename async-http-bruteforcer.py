@@ -132,7 +132,7 @@ def bruteforce(url,
         if resp.status_code not in error_codes and error_message not in resp.text:
             creds = f'{user}:{passwd}'
 
-            success_message = f'Found valid credentials: [{creds}]'
+            success_message = f'{"*" * 50}Found valid credentials: [{creds}]{"*" * 50}'
             if verbose:
                 success_message = f'{success_message} [{resp.status_code}] - [{resp.text}]'
             print(success_message)
