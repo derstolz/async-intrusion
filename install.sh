@@ -9,6 +9,7 @@ rm -rf /usr/bin/async-web-scan 2>/dev/null
 rm -rf /usr/bin/async-web-fuzzer 2>/dev/null
 rm -rf /usr/bin/async-robots-scan 2>/dev/null
 rm -rf /usr/bin/async-pass-the-hash 2>/dev/null
+rm -rf /usr/bin/async-http-bruteforcer 2>/dev/null
 
 link async-connect-scan.py /usr/bin/async-connect-scan &&
 link async-snmp-scan.py /usr/bin/async-snmp-scan &&
@@ -16,4 +17,5 @@ link async-web-scan.py /usr/bin/async-web-scan &&
 link async-web-fuzzer.py /usr/bin/async-web-fuzzer &&
 link async-robots-scan.py /usr/bin/async-robots-scan &&
 link async-pass-the-hash.py /usr/bin/async-pass-the-hash &&
+link async-http-bruteforcer.py /usr/bin/async-http-bruteforcer && 
 echo 'OK.'
