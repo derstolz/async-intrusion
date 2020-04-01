@@ -59,7 +59,8 @@ def get_arguments():
                         required=False,
                         default=DEFAULT_ERROR_CODE,
                         type=str,
-                        help='Specify an error HTTP status code to compare with incoming responses. '
+                        help='Specify an HTTP status code or a comma-separated list of status codes '
+                             'to compare with incoming responses. '
                              f'Default is {DEFAULT_ERROR_CODE}')
     parser.add_argument('--error-message',
                         dest='error_message',
@@ -104,6 +105,10 @@ def bruteforce(url,
 
     post_data = post_data.replace('^USER^', user).replace('^PASS^', password)
 
+    if ',' in error_code:
+        error_codes = [int(chunk) for chunk in error_code.split(',')]
+    else:
+        error_codes = [int(error_code)]
     try:
         headers = {
             'Authorization': auth_header,
@@ -123,7 +128,8 @@ def bruteforce(url,
         if verbose:
             log_message = f'{log_message} [{resp.status_code}] - [{resp.text}]'
         print(log_message)
-        if resp.status_code != error_code and error_message not in resp.text:
+
+        if resp.status_code not in error_codes and error_message not in resp.text:
             creds = f'{user}:{passwd}'
 
             success_message = f'Found valid credentials: [{creds}]'
