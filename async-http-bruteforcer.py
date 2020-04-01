@@ -62,7 +62,7 @@ def get_arguments():
                         help='Specify an error HTTP status code to compare with incoming responses. '
                              f'Default is {DEFAULT_ERROR_CODE}')
     parser.add_argument('--error-message',
-                        dest='error_code',
+                        dest='error_message',
                         required=False,
                         default=DEFAULT_ERROR_CODE,
                         type=str,
